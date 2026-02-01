@@ -1,6 +1,11 @@
 export interface LeaderboardData {
     routeNumber: string;
     speed: number;
+    totalTrams?: number;
+    minSpeed?: number;
+    maxSpeed?: number;
+    minReportAgeSec?: number | null;
+    lastUpdated?: string;
 }
 
 export class LeaderboardQueue {

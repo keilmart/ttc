@@ -7,6 +7,9 @@ import { Analytics } from "@vercel/analytics/react";
 
 function App() {
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardData[]>([]);
+  const [vehicleKeys, setVehicleKeys] = useState<string[]>([]);
+  const [rawVehicleCount, setRawVehicleCount] = useState<number>(0);
+  const [sampleVehicle, setSampleVehicle] = useState<Record<string, unknown> | null>(null);
   const leaderboardDataRef = useRef<LeaderboardData[]>([]);
   const leaderboardQueue = useRef(new LeaderboardQueue());
   const route_map: Record<string, string> = {
@@ -36,12 +39,34 @@ function App() {
 
       if (response.status !== 200) throw new Error(`Failed to fetch: ${response.status}`);
 
-      const newData: LeaderboardData[] = data.averageSpeeds.map(
-        (route: [string, number]) => ({
+      const routeStats =
+        data.routes ??
+        data.averageSpeeds?.map((route: [string, number]) => ({
           routeNumber: route[0],
-          speed: route[1],
+          avgSpeed: route[1],
+        })) ??
+        [];
+
+      const newData: LeaderboardData[] = routeStats.map(
+        (route: {
+          routeNumber: string;
+          avgSpeed: number;
+          totalTrams?: number;
+          minSpeed?: number;
+          maxSpeed?: number;
+          minReportAgeSec?: number | null;
+          lastUpdated?: string;
+        }) => ({
+          routeNumber: route.routeNumber,
+          speed: route.avgSpeed,
+          totalTrams: route.totalTrams,
+          minSpeed: route.minSpeed,
+          maxSpeed: route.maxSpeed,
+          minReportAgeSec: route.minReportAgeSec,
+          lastUpdated: route.lastUpdated,
         }),
       );
+
 
       // Filter to find elements that are different from current leaderboard
       const changedData = newData.filter((newItem) => {
@@ -118,6 +143,27 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const fetchRaw = async () => {
+      try {
+        const response = await fetch("/api/ttc?includeRaw=1");
+        const data = await response.json();
+        if (response.status !== 200) throw new Error(`Failed to fetch: ${response.status}`);
+        if (Array.isArray(data.vehicleKeys)) {
+          setVehicleKeys(data.vehicleKeys);
+        }
+        if (Array.isArray(data.rawVehicles)) {
+          setRawVehicleCount(data.rawVehicles.length);
+          setSampleVehicle(data.rawVehicles[0] ?? null);
+        }
+      } catch (error) {
+        console.error("Error fetching raw TTC data:", error);
+      }
+    };
+
+    fetchRaw();
+  }, []);
+
   return (
     <>
       <div className="wrapper">
@@ -137,6 +183,11 @@ function App() {
                     routeNumber={position.routeNumber}
                     routeName={route_map[position.routeNumber]}
                     speed={position.speed}
+                    totalTrams={position.totalTrams}
+                    minSpeed={position.minSpeed}
+                    maxSpeed={position.maxSpeed}
+                    minReportAgeSec={position.minReportAgeSec}
+                    lastUpdated={position.lastUpdated}
                   />
                 </motion.div>
               ))
@@ -146,6 +197,13 @@ function App() {
         <div className="info">
           This leaderboard is live and shows the average speed<br></br>of all streetcars
           on a route with ~30 second delay.
+          <details className="debug">
+            <summary>API keys + sample (debug)</summary>
+            <div>vehicles: {rawVehicleCount}</div>
+            <div>keys ({vehicleKeys.length}):</div>
+            <pre>{vehicleKeys.length ? vehicleKeys.join("\n") : "none"}</pre>
+            <pre>{sampleVehicle ? JSON.stringify(sampleVehicle, null, 2) : "no sample"}</pre>
+          </details>
         </div>
       </div>
 
