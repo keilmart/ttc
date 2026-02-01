@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import './App.css'
-import LeaderboardPosition from './components/LeaderboardPosition'
-import { LeaderboardQueue, type LeaderboardData } from './LeaderboardQueue'
-import { Analytics } from '@vercel/analytics/react'
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import "./App.css";
+import LeaderboardPosition from "./components/LeaderboardPosition";
+import { LeaderboardQueue, type LeaderboardData } from "./LeaderboardQueue";
+import { Analytics } from "@vercel/analytics/react";
 
 function App() {
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardData[]>([]);
@@ -26,26 +26,27 @@ function App() {
     "305": "Dundas",
     "306": "Carleton",
     "310": "Spadina",
-    "312": "St. Clair"
+    "312": "St. Clair",
   };
 
   const fetchLeaderboard = async () => {
     try {
-      const response = await fetch('/api/ttc');
+      const response = await fetch("/api/ttc");
       const data = await response.json();
 
-      if (response.status !== 200)
-        throw new Error(`Failed to fetch: ${response.status}`);
+      if (response.status !== 200) throw new Error(`Failed to fetch: ${response.status}`);
 
-      const newData: LeaderboardData[] = data.map((route: [string, number]) => ({
-        routeNumber: route[0],
-        speed: route[1]
-      }));
+      const newData: LeaderboardData[] = data.averageSpeeds.map(
+        (route: [string, number]) => ({
+          routeNumber: route[0],
+          speed: route[1],
+        }),
+      );
 
       // Filter to find elements that are different from current leaderboard
       const changedData = newData.filter((newItem) => {
         const existingItem = leaderboardDataRef.current.find(
-          (item) => item.routeNumber === newItem.routeNumber
+          (item) => item.routeNumber === newItem.routeNumber,
         );
         // Include if: doesn't exist in current data OR speed changed
         return !existingItem || existingItem.speed !== newItem.speed;
@@ -53,9 +54,8 @@ function App() {
 
       // Add changed items to the queue
       leaderboardQueue.current.upsertAll(changedData);
-
     } catch (error) {
-      console.error('Error fetching leaderboard:', error);
+      console.error("Error fetching leaderboard:", error);
     }
   };
 
@@ -73,7 +73,14 @@ function App() {
       if (nextItem) {
         // Compute what the new sorted data will be using the ref
         const prevData = leaderboardDataRef.current;
-        const existingIndex = prevData.findIndex(item => item.routeNumber === nextItem.routeNumber);
+        // TODO - Old method below here
+        // const existingIndex = prevData.findIndex(
+        //   (item) => item.routeNumber === nextItem.routeNumber,
+        // );
+
+        const existingIndex = prevData.findIndex(
+          (item) => item.routeNumber === nextItem.routeNumber,
+        );
         let newData: LeaderboardData[];
 
         if (existingIndex !== -1) {
@@ -86,8 +93,8 @@ function App() {
         const sortedData = [...newData].sort((a, b) => b.speed - a.speed);
 
         // Check if order changed by comparing route order
-        const orderChanged = sortedData.some((item, index) =>
-          prevData[index]?.routeNumber !== item.routeNumber
+        const orderChanged = sortedData.some(
+          (item, index) => prevData[index]?.routeNumber !== item.routeNumber,
         );
 
         // Update state and ref
@@ -108,23 +115,12 @@ function App() {
     return () => {
       clearInterval(fetch_interval);
       clearTimeout(updateTimeoutId);
-    }
+    };
   }, []);
 
   return (
     <>
       <div className="wrapper">
-        <div className="title">
-          TTC STREETCARS LIVE LEADERBOARD
-        </div>
-        <div className="image-container">
-          <img id="streetcar-image" src="https://live.staticflickr.com/7791/17390893711_bf1b2131ad_h.jpg" alt="streetcar pulled by horse" />
-        </div>
-        <div className="information">
-          Recently the TTC has been under a lot of criticism for <a href="https://www.blogto.com/city/2024/08/toronto-ttc-streetcars-slowest-world/" target="_blank">slow service</a>.
-          <br></br>
-          This site intends to show how slow it really is.
-        </div>
         <div className="leaderboard">
           <AnimatePresence>
             {leaderboardData.length == 0 ? (
@@ -136,8 +132,7 @@ function App() {
                   layout
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                >
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}>
                   <LeaderboardPosition
                     routeNumber={position.routeNumber}
                     routeName={route_map[position.routeNumber]}
@@ -149,16 +144,14 @@ function App() {
           </AnimatePresence>
         </div>
         <div className="info">
-          This leaderboard is live and shows the average speed<br></br>of all streetcars on a route with ~30 second delay.
-        </div>
-        <div className="footer">
-          <i>By <a href="https://lukajvnic.com" target="_blank">Luka Jovanovic</a> & <a href="https://www.linkedin.com/in/matthew-li07/" target="_blank">Matthew Li</a> (<a href="https://github.com/lukajvnic/ttc-leaderboard" target="_blank">github</a>)</i>
+          This leaderboard is live and shows the average speed<br></br>of all streetcars
+          on a route with ~30 second delay.
         </div>
       </div>
 
       <Analytics />
     </>
-  )
+  );
 }
 
-export default App
+export default App;
