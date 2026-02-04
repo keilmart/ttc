@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useRef } from "react";
 import "./LeaderboardPosition.css";
 
 interface LeaderboardPosition {
@@ -10,6 +10,9 @@ interface LeaderboardPosition {
   maxSpeed?: number;
   minReportAgeSec?: number | null;
   lastUpdated?: string;
+  latestLat?: number;
+  latestLon?: number;
+  latestVehicleId?: string;
 }
 
 function LeaderboardPosition({
@@ -21,22 +24,11 @@ function LeaderboardPosition({
   maxSpeed,
   minReportAgeSec,
   lastUpdated,
+  latestLat,
+  latestLon,
+  latestVehicleId,
 }: LeaderboardPosition) {
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 500);
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 500);
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const detailsBorder = isMobile
-    ? "------------------------------------"
-    : "--------------------------------------------------";
 
   return (
     <div className="leaderboard-position" ref={containerRef}>
@@ -56,7 +48,8 @@ function LeaderboardPosition({
         minSpeed !== undefined ||
         maxSpeed !== undefined ||
         minReportAgeSec !== undefined ||
-        lastUpdated) && (
+        lastUpdated ||
+        (latestLat !== undefined && latestLon !== undefined)) && (
         <>
           <div className="content meta">
             <div className="left-side">
@@ -71,6 +64,12 @@ function LeaderboardPosition({
               )}
               {lastUpdated && (
                 <span>&nbsp;updated: {new Date(lastUpdated).toLocaleTimeString()}</span>
+              )}
+              {latestLat !== undefined && latestLon !== undefined && (
+                <span>
+                  &nbsp;latest: {latestLat.toFixed(5)}, {latestLon.toFixed(5)}
+                  {latestVehicleId ? ` (${latestVehicleId})` : ""}
+                </span>
               )}
             </div>
           </div>

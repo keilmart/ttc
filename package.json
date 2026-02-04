@@ -14,8 +14,10 @@
     "@vercel/analytics": "^1.6.1",
     "fast-xml-parser": "^5.3.3",
     "framer-motion": "^12.27.1",
+    "leaflet": "^1.9.4",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-leaflet": "^5.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
